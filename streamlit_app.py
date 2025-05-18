@@ -29,13 +29,13 @@ download_model_from_drive(GOOGLE_DRIVE_FILE_ID, MODEL_DIR)
 os.environ["XDG_CONFIG_HOME"] = os.path.join(os.getcwd(), ".streamlit")
 
 label_classes = [
-    'Data Science', 'HR', 'Advocate', 'Arts', 'Web Designing',
-    'Mechanical Engineer', 'Sales', 'Health and fitness',
+    'Testing', 'HR', 'Advocate', 'Arts', 'Sales',
+    'Mechanical Engineer', 'Data Science', 'Health and fitness',
     'Civil Engineer', 'Java Developer', 'Business Analyst',
     'SAP Developer', 'Automation Testing', 'Electrical Engineering',
     'Operations Manager', 'Python Developer', 'DevOps Engineer',
     'Network Security Engineer', 'PMO', 'Database', 'Hadoop',
-    'ETL Developer', 'DotNet Developer', 'Blockchain', 'Testing'
+    'ETL Developer', 'DotNet Developer', 'Blockchain', 'Web Designing'
 ]
 
 # Load model and tokenizer
@@ -53,53 +53,57 @@ def extract_text_from_pdf(pdf_file):
         text += page.extract_text() or ""
     return text
 
-# Extract skills from text
 def extract_skill_names(text):
-    exclude_words = {
-        'this', 'that', 'results', 'information', 'skills', 'skill', 'details',
-        'experience', 'exprience', 'na', 'which', 'hours', 'topics', 'terms',
-        'data', 'questions', 'answers', 'users', 'tools', 'tool', 'client', 'clients',
-        'research', 'operation', 'operations', 'company', 'description', 'using',
-        'including', 'others', 'related', 'various', 'like', 'etc', 'and', 'or', 'with',
-        'understanding', 'knowledge', 'different', 'based', 'multiple', 'overall',
-        'in', 'of', 'the', 'a', 'an', 'to', 'for', 'on', 'at', 'by', 'from', 'also', 'as'
+    # Normalize entire text to lowercase for case-insensitive matching
+    text = text.lower()
+
+    # Whitelist: all lowercase for consistent matching
+    skill_whitelist = {
+        "python", "sql", "excel", "tableau", "tensorflow", "pandas", "numpy",
+        "seaborn", "selenium", "beautiful soup", "scrapy", "flask", "windows",
+        "linux", "mac os", "mysql", "aws", "google cloud", "ibm certified data scientist",
+        "artificial intelligence", "machine learning", "deep learning", "data analysis",
+        "data visualization", "natural language processing", "computer vision",
+        "statistical analysis", "web scraping", "data mining", "report writing",
+        "cloud computing", "docker", "kubernetes", "git", "javascript", "node.js",
+        "react", "vue.js", "java", "c++", "c#", "php", "html", "css", "rest api",
+        "graphql", "agile", "scrum", "devops", "bash", "powershell",
+        "android studio", "genymotion", "android sdk", "android development tools (adt)",
+        "json", "xml", "financial modeling", "financial reporting", "financial accounting",
+        "business valuation", "sas", "budgeting", "investment analysis", "financial planning",
+        "risk management", "invision", "axure",
+        "observation", "decision making", "communication", "multi-tasking", "teamwork",
+        "problem solving", "wordpress", "sass", "letterpress printing", "graphic design",
+        "art direction", "web design", "branding", "mockups", "photo editing", "video editing"
     }
 
-    # Regex pattern to capture skill-related phrases
-    pattern = re.compile(
-        r'(skills include|technical skills include|proficiency in|experience with|knowledge of|familiar with|expertise in)\s+([\w\s,./+-]+)',
-        re.IGNORECASE
-    )
+    # Find skill-like phrases in text, split by commas, semicolons, newlines, slashes
+    skill_candidates = re.split(r'[,;/\n]+', text)
 
-    matches = pattern.findall(text)
-    if not matches:
-        return ""
+    extracted_skills = set()
 
-    skills_phrases = [match[1] for match in matches]
+    for candidate in skill_candidates:
+        skill = candidate.strip()
+        # Clean trailing punctuation like dots or dashes
+        skill = re.sub(r'[\.-]+$', '', skill)
 
-    combined_skills = ','.join(skills_phrases)
+        # Try direct whitelist match or substring match to whitelist
+        if skill in skill_whitelist:
+            extracted_skills.add(skill)
+        else:
+            # Check if skill contains a whitelist skill as substring (handles minor variations)
+            for wskill in skill_whitelist:
+                if wskill in skill:
+                    extracted_skills.add(wskill)
 
-    # Split skills by comma, semicolon, or slash to get individual skills
-    raw_skills = re.split(r'[,\;/]+', combined_skills)
+    # Capitalize skills for better formatting
+    def capitalize_skill(s):
+        return ' '.join(word.capitalize() for word in s.split())
 
-    cleaned_skills = []
-    for skill in raw_skills:
-        skill = skill.strip().lower()
-        skill = re.sub(r'[\.-]+$', '', skill)  # Remove trailing dots or dashes
-        if len(skill) < 2 or skill in exclude_words:
-            continue
-        cleaned_skills.append(skill)
+    # Return sorted list for consistency
+    return ', '.join(capitalize_skill(s) for s in sorted(extracted_skills))
 
-    # Deduplicate while preserving order
-    seen = set()
-    unique_skills = []
-    for skill in cleaned_skills:
-        if skill not in seen:
-            seen.add(skill)
-            unique_skills.append(skill)
 
-    # Capitalize each skill properly
-    return ', '.join(s.capitalize() for s in unique_skills)
 
 # Predict job category and extract skills
 def predict_and_extract_skills(resume_text, model, tokenizer):
