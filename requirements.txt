@@ -1,0 +1,5 @@
+streamlit
+transformers
+torch
+PyMuPDF
+docx2txt
