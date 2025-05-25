@@ -21,7 +21,7 @@ def download_model_from_drive(file_id, output_dir):
             zip_ref.extractall(output_dir)
         os.remove(zip_path)
 
-MODEL_DIR = "newmodel/newmodel"
+MODEL_DIR = "newmodel/newmodel/newmodel"
 GOOGLE_DRIVE_FILE_ID = "1046GVAZWgU12mWlehraHaFmxypGMUO-u"
 
 download_model_from_drive(GOOGLE_DRIVE_FILE_ID, MODEL_DIR)
