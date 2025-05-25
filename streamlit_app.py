@@ -7,8 +7,6 @@ import os
 import gdown
 import zipfile
 
-# commit changes
-
 def download_model_from_drive(file_id, output_dir):
     os.makedirs(output_dir, exist_ok=True)
     zip_path = os.path.join(output_dir, "newmodel.zip")
